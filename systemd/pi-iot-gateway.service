@@ -1,0 +1,16 @@
+[Unit]
+Description=Pi IoT Gateway Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/pi-iot-gateway
+Environment=PI_IOT_FERNET_KEY_FILE=/etc/pi-iot-gateway/fernet.key
+ExecStart=/opt/pi-iot-gateway/.venv/bin/python -m backend.main
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

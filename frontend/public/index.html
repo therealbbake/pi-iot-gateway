@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pi IoT Gateway</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://static.oracle.com/cdn/jet/v15.0.0/default/css/alta/oj-alta-min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      data-main="js/main"
+      src="https://static.oracle.com/cdn/jet/v15.0.0/default/js/libs/require/require.js"
+    ></script>
+  </head>
+  <body class="oj-web-applayout-body">
+    <div id="app" class="oj-web-applayout-page">
+      <div class="oj-web-applayout-max-width oj-flex oj-sm-flex-items-1">
+        <header class="oj-web-applayout-header">
+          <h1 class="oj-typography-heading-xl">Pi IoT Gateway Dashboard</h1>
+        </header>
+        <main>
+          <div id="dashboardModule" data-bind="ojModule: moduleConfig"></div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
