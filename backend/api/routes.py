@@ -13,6 +13,7 @@ from backend.sensor.base import discover_w1_sensors
 from backend.storage import list_readings
 from backend.scheduler import scheduler as sensor_scheduler
 from backend.transports.base import get_transport
+from backend.actuators.light import LightActuator
 
 router = APIRouter(prefix="/api")
 
@@ -71,3 +72,15 @@ async def test_connection(request: TestConnectionRequest) -> TestConnectionRespo
         return TestConnectionResponse(status="ok", message="Connection test succeeded")
     except Exception as exc:  # pylint: disable=broad-except
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+@router.post("/light/on")
+async def light_on():
+    actuator = LightActuator()
+    actuator.turn_on()
+    return {"status": "ok", "message": "Light turned on"}
+
+@router.post("/light/off")
+async def light_off():
+    actuator = LightActuator()
+    actuator.turn_off()
+    return {"status": "ok", "message": "Light turned off"}

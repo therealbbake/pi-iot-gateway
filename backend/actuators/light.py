@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class LightActuator:
     def __init__(self):
-        self.pin = config_repository.settings.transport.get("light_gpio_pin", 17)  # Default to pin 17
+        self.pin = config_repository.settings.transport.light_gpio_pin  # Configured in settings
         if not MOCK:
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.pin, GPIO.OUT)

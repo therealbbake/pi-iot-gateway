@@ -23,7 +23,7 @@ class SensorConfigModel(BaseModel):
 
 
 class TransportConfigModel(BaseModel):
-    protocol: str = Field(..., pattern="^(http|mqtts)$")
+    protocol: str = Field(..., pattern="^(http|mqtt)$")
     domain: str
     region: str
     resource: str
@@ -50,7 +50,7 @@ class ConfigUpdatePayload(BaseModel):
 
 
 class TestConnectionRequest(BaseModel):
-    protocol_override: Optional[str] = Field(None, pattern="^(http|mqtts)$")
+    protocol_override: Optional[str] = Field(None, pattern="^(http|mqtt)$")
 
 
 class TestConnectionResponse(BaseModel):

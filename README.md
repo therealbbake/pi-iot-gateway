@@ -7,7 +7,7 @@ Python-based service for Raspberry Pi devices that reads temperature data from G
 - FastAPI backend with background scheduler that polls a DS18B20 (1-wire) sensor or a mock sensor for development.
 - Pluggable IoT transports supporting Oracle IoT ingestion via HTTPS POST or MQTT over TLS.
 - SQLite persistence for historical readings and REST APIs to retrieve telemetry and adjust configuration at runtime.
-- Oracle JET single-page UI served directly by the backend for live charts, recent readings, and IoT credential updates.
+- Updated UI with sensor data grouped into cards showing the last 3 readings, expandable to a modal with all data. Configuration moved to a modal dialog accessible via Settings icon. Added Light Control section with buttons to turn light on/off via direct actuator calls.
 - Systemd unit and installer script for Raspberry Pi deployment with encrypted secret storage (Fernet).
 
 ## Requirements
@@ -68,11 +68,12 @@ PYTHONPATH=. pytest
 - EMQX dashboard is available at `http://localhost:18083` (default username: admin, password: public).
 - The gateway publishes to topic `iot/<device_id>/<resource>` on localhost:1883.
 
-## MQTT-Triggered Actions
+## Light Control Actions
 
-- The backend subscribes to `powerOnLight` and `powerOffLight` topics on the configured MQTT broker.
-- Publishing to these topics triggers the light connected via SSR-40 DA on the configured GPIO pin (default: 17, configurable via `light_gpio_pin` in `config/config.yaml`).
+- The backend provides API endpoints to directly control the light using the LightActuator.
+- API calls trigger the light connected via SSR-40 DA on the configured GPIO pin (default: 17, configurable via `light_gpio_pin` in `config/config.yaml`).
 - In non-Raspberry Pi environments, actions are mocked and logged.
+- UI provides buttons to trigger these actions by calling the API endpoints directly.
 
 ## Deployment on Raspberry Pi
 
