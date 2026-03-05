@@ -8,6 +8,8 @@ from backend.models import (
     TestConnectionRequest,
     TestConnectionResponse,
 )
+from typing import List
+from backend.sensor.base import discover_w1_sensors
 from backend.storage import list_readings
 from backend.scheduler import scheduler as sensor_scheduler
 from backend.transports.base import get_transport
@@ -24,6 +26,7 @@ async def readings(limit: int = 100) -> ReadingsResponse:
             "temperature_f": reading.temperature_f,
             "transport_status": reading.transport_status,
             "transport_error": reading.transport_error,
+            "sensor_id": reading.sensor_id,
         }
         for reading in list_readings(limit=limit)
     ]
@@ -51,6 +54,10 @@ async def update_config(payload: ConfigUpdatePayload) -> ConfigResponse:
     await sensor_scheduler.start()
     return await get_config()
 
+
+@router.get("/sensors/discover", response_model=List[str])
+async def discover_sensors() -> List[str]:
+    return discover_w1_sensors()
 
 @router.post("/test-connection", response_model=TestConnectionResponse)
 async def test_connection(request: TestConnectionRequest) -> TestConnectionResponse:

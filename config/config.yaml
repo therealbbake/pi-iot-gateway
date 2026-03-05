@@ -1,8 +1,9 @@
 transport:
-  protocol: http
+  protocol: mqtt
   domain: example
   region: us-ashburn-1
   resource: sampletopic
   device_id: pi-gateway-01
   sampling_interval_sec: 30
+  publish_enabled: false
   sensor_provider: mock

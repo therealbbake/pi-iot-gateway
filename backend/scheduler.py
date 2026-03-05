@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Dict
 
 from backend.config import ConfigRepository, TransportSettings, config_repository
 from backend.sensor.base import BaseSensorProvider, get_provider
@@ -16,10 +16,9 @@ class SensorScheduler:
         self._repo = repository
         self._task: Optional[asyncio.Task[None]] = None
         self._stop_event = asyncio.Event()
-        self._provider: Optional[BaseSensorProvider] = None
+        self._providers: Dict[str, BaseSensorProvider] = {}
         self._transport: Optional[BaseTransport] = None
         self._protocol: Optional[str] = None
-        self._provider_name: Optional[str] = None
 
     async def start(self) -> None:
         if self._task and not self._task.done():
@@ -45,49 +44,64 @@ class SensorScheduler:
     async def _run(self) -> None:
         while not self._stop_event.is_set():
             settings = self._repo.settings.transport
-            if not self._provider or self._provider_name != settings.sensor_provider:
-                self._provider = get_provider(settings.sensor_provider)
-                self._provider_name = settings.sensor_provider
+            # Update providers based on configured sensors
+            current_sensor_ids = set(sensor.id for sensor in settings.sensors)
+            self._providers = {sid: prov for sid, prov in self._providers.items() if sid in current_sensor_ids}
+            for sensor in settings.sensors:
+                if sensor.id not in self._providers:
+                    self._providers[sensor.id] = get_provider(sensor.provider, sensor.id)
+
             if not self._transport or self._protocol != settings.protocol:
                 await self._close_transport()
                 self._transport = get_transport(settings, self._repo.secrets)
                 self._protocol = settings.protocol
-            provider = self._provider
+
             transport = self._transport
-            if not provider or not transport:  # pragma: no cover
-                logger.error("Sensor scheduler missing provider or transport; sleeping.")
+            if not transport:  # pragma: no cover
+                logger.error("Sensor scheduler missing transport; sleeping.")
                 await asyncio.sleep(settings.sampling_interval_sec)
                 continue
-            recorded_at = datetime.now(timezone.utc)
-            transport_status = "success"
-            transport_error: Optional[str] = None
-            try:
-                temp_c = provider.read_celsius()
-                temp_f = provider.read_fahrenheit()
+
+            for sensor_id, provider in self._providers.items():
+                try:
+                    temp_c = provider.read_celsius()
+                    temp_f = provider.read_fahrenheit()
+                except Exception as exc:  # pylint: disable=broad-except
+                    logger.warning("Sensor %s read failed: %s", sensor_id, exc)
+                    continue
+
+                recorded_at = datetime.now(timezone.utc)
                 payload = {
                     "device": settings.device_id,
+                    "sensor": sensor_id,
                     "temperatureC": temp_c,
                     "temperatureF": temp_f,
                     "timestamp": recorded_at.isoformat(),
                 }
-                await transport.send(payload)
-                logger.info("Reading sent: %s", payload)
-            except Exception as exc:  # pylint: disable=broad-except
-                transport_status = "failure"
-                transport_error = str(exc)
-                logger.exception("Failed to send reading: %s", exc)
-                # also persist reading even if sensor read failed?
-                temp_c = temp_f = float("nan")
-            finally:
+                transport_status = "disabled"
+                transport_error: Optional[str] = None
+                if settings.publish_enabled:
+                    try:
+                        await transport.send(payload)
+                        transport_status = "success"
+                        logger.info("Reading sent for sensor %s: %s", sensor_id, payload)
+                    except Exception as exc:  # pylint: disable=broad-except
+                        transport_status = "failure"
+                        transport_error = str(exc)
+                        logger.warning("Failed to send reading for sensor %s: %s", sensor_id, exc)
+                else:
+                    logger.info("Publishing disabled; skipping send for sensor %s", sensor_id)
                 add_reading(
                     Reading(
                         recorded_at=recorded_at,
-                        temperature_c=temp_c if "temp_c" in locals() else float("nan"),
-                        temperature_f=temp_f if "temp_f" in locals() else float("nan"),
+                        temperature_c=temp_c,
+                        temperature_f=temp_f,
                         transport_status=transport_status,
                         transport_error=transport_error,
+                        sensor_id=sensor_id,
                     )
                 )
+
             await asyncio.sleep(settings.sampling_interval_sec)
 
 

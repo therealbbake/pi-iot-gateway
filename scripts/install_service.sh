@@ -22,6 +22,18 @@ sudo "$PYTHON_BIN" -m venv "$VENV_DIR"
 sudo "$VENV_DIR/bin/pip" install --upgrade pip wheel
 sudo "$VENV_DIR/bin/pip" install -r "$APP_ROOT/requirements.txt"
 
+echo "[pi-iot-gateway] Installing Docker if not present"
+if ! command -v docker >/dev/null 2>&1; then
+  sudo apt update
+  sudo apt install -y docker.io
+  sudo systemctl enable docker
+  sudo systemctl start docker
+  sudo usermod -aG docker $SERVICE_USER
+fi
+
+echo "[pi-iot-gateway] Starting EMQX MQTT broker via Docker"
+sudo docker run -d --name emqx -p 1883:1883 -p 8083:8083 -p 8084:8084 -p 18083:18083 emqx/emqx
+
 sudo mkdir -p "$(dirname "$FERNET_KEY_FILE")"
 if [ ! -f "$FERNET_KEY_FILE" ]; then
   sudo "$VENV_DIR/bin/python" -c "from cryptography.fernet import Fernet; import pathlib; pathlib.Path('$FERNET_KEY_FILE').write_bytes(Fernet.generate_key())"

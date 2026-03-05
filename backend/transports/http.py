@@ -23,6 +23,8 @@ class HttpTransport(BaseTransport):
         )
 
     async def send(self, payload: dict) -> None:
+        if not self.settings.publish_enabled:
+            return  # Skip sending if publishing is disabled
         try:
             response = await self._client.post(
                 self.endpoint,
@@ -53,4 +55,3 @@ class HttpTransport(BaseTransport):
 
 
 register("http", HttpTransport)
-

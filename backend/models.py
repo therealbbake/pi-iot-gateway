@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -10,20 +10,27 @@ class ReadingModel(BaseModel):
     temperature_f: float
     transport_status: str
     transport_error: Optional[str]
+    sensor_id: Optional[str] = None
 
 
 class ReadingsResponse(BaseModel):
     readings: List[ReadingModel]
 
 
+class SensorConfigModel(BaseModel):
+    id: str
+    provider: Literal["w1", "mock"] = "w1"
+
+
 class TransportConfigModel(BaseModel):
-    protocol: str = Field(..., regex="^(http|mqtts)$")
+    protocol: str = Field(..., pattern="^(http|mqtts)$")
     domain: str
     region: str
     resource: str
     device_id: str
     sampling_interval_sec: int = Field(..., ge=5, le=3600)
-    sensor_provider: str
+    publish_enabled: bool = True
+    sensors: List[SensorConfigModel] = Field(default_factory=list)
 
 
 class ConfigResponse(BaseModel):
@@ -43,9 +50,11 @@ class ConfigUpdatePayload(BaseModel):
 
 
 class TestConnectionRequest(BaseModel):
-    protocol_override: Optional[str] = Field(None, regex="^(http|mqtts)$")
+    protocol_override: Optional[str] = Field(None, pattern="^(http|mqtts)$")
 
 
 class TestConnectionResponse(BaseModel):
     status: str
     message: Optional[str]
+
+TransportConfigModel.model_rebuild()

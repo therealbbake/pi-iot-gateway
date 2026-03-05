@@ -2,7 +2,9 @@ import json
 import os
 import threading
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, List
+
+from backend.models import SensorConfigModel
 
 import yaml
 from cryptography.fernet import Fernet
@@ -16,23 +18,30 @@ ENV_FERNET_FILE = "PI_IOT_FERNET_KEY_FILE"
 
 
 class TransportSettings(BaseModel):
-    protocol: Literal["http", "mqtts"] = "http"
+    protocol: Literal["http", "mqtt"] = "http"
     domain: str = "example"
     region: str = "us-ashburn-1"
     resource: str = "sampletopic"
     device_id: str = "pi-gateway-01"
     sampling_interval_sec: int = Field(30, ge=5, le=3600)
-    sensor_provider: str = "w1"
+    publish_enabled: bool = True
+    sensors: List[SensorConfigModel] = Field(default_factory=list)
+    light_gpio_pin: int = Field(17, ge=1, le=40)  # GPIO pin for light control
+    mqtt_host: Optional[str] = None
+    mqtt_port: int = Field(1883, ge=1, le=65535)
+    mqtt_use_tls: bool = False
 
-    @validator("domain")
-    def domain_must_not_be_empty(cls, value: str) -> str:
-        if not value:
-            raise ValueError("domain must not be empty")
-        return value
+@validator("domain")
+def domain_must_not_be_empty(cls, value: str, values) -> str:
+    if values.get("publish_enabled", True) and not value:
+        raise ValueError("domain must not be empty when publishing is enabled")
+    return value
 
     @validator("resource")
     def resource_strip_slash(cls, value: str) -> str:
         return value.lstrip("/")
+
+TransportSettings.model_rebuild()
 
 
 class SecretSettings(BaseModel):
@@ -44,6 +53,8 @@ class SecretSettings(BaseModel):
 
 class AppSettings(BaseModel):
     transport: TransportSettings = TransportSettings()
+
+AppSettings.model_rebuild()
 
 
 class SecretManager:
@@ -151,4 +162,3 @@ class ConfigRepository:
 
 
 config_repository = ConfigRepository()
-

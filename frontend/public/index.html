@@ -1,29 +1,260 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Pi IoT Gateway</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      rel="stylesheet"
-      href="https://static.oracle.com/cdn/jet/v15.0.0/default/css/alta/oj-alta-min.css"
-    />
-    <link rel="stylesheet" href="styles.css" />
-    <script
-      data-main="js/main"
-      src="https://static.oracle.com/cdn/jet/v15.0.0/default/js/libs/require/require.js"
-    ></script>
-  </head>
-  <body class="oj-web-applayout-body">
-    <div id="app" class="oj-web-applayout-page">
-      <div class="oj-web-applayout-max-width oj-flex oj-sm-flex-items-1">
-        <header class="oj-web-applayout-header">
-          <h1 class="oj-typography-heading-xl">Pi IoT Gateway Dashboard</h1>
-        </header>
-        <main>
-          <div id="dashboardModule" data-bind="ojModule: moduleConfig"></div>
-        </main>
-      </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi IoT Gateway UI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body { padding: 20px; }
+        .section { margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Pi IoT Gateway</h1>
+        
+        <div class="section">
+            <h2>Current Readings</h2>
+            <button id="refresh-readings" class="btn btn-primary mb-3">Refresh</button>
+            <table class="table table-striped" id="readings-table">
+                <thead>
+                    <tr>
+                        <th>Recorded At</th>
+                        <th>Sensor ID</th>
+                        <th>Temp C</th>
+                        <th>Temp F</th>
+                        <th>Status</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h2>Configuration</h2>
+            <form id="config-form">
+                <div class="mb-3">
+                    <label for="protocol" class="form-label">Protocol</label>
+                    <select class="form-select" id="protocol">
+                        <option value="http">HTTP</option>
+                        <option value="mqtts">MQTTS</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="domain" class="form-label">Domain</label>
+                    <input type="text" class="form-control" id="domain">
+                </div>
+                <div class="mb-3">
+                    <label for="region" class="form-label">Region</label>
+                    <input type="text" class="form-control" id="region">
+                </div>
+                <div class="mb-3">
+                    <label for="resource" class="form-label">Resource</label>
+                    <input type="text" class="form-control" id="resource">
+                </div>
+                <div class="mb-3">
+                    <label for="device_id" class="form-label">Device ID</label>
+                    <input type="text" class="form-control" id="device_id">
+                </div>
+                <div class="mb-3">
+                    <label for="sampling_interval_sec" class="form-label">Sampling Interval (sec)</label>
+                    <input type="number" class="form-control" id="sampling_interval_sec" min="5" max="3600">
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="publish_enabled">
+                    <label class="form-check-label" for="publish_enabled">Enable Publishing</label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Sensors</label>
+                    <div id="sensors-container" class="mb-2"></div>
+                    <button type="button" class="btn btn-secondary" id="add-sensor">Add Sensor</button>
+                    <button type="button" class="btn btn-secondary ms-2" id="discover-sensors">Discover Sensors</button>
+                </div>
+                <!-- Secrets -->
+                <h3>Secrets (Optional)</h3>
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password">
+                </div>
+                <div class="mb-3">
+                    <label for="mqtt_client_cert" class="form-label">MQTT Client Cert</label>
+                    <textarea class="form-control" id="mqtt_client_cert"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="mqtt_client_key" class="form-label">MQTT Client Key</label>
+                    <textarea class="form-control" id="mqtt_client_key"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Update Config</button>
+                <button type="button" id="test-connection" class="btn btn-info ms-2">Test Connection</button>
+            </form>
+            <div id="config-message" class="mt-3"></div>
+        </div>
     </div>
-  </body>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        const API_BASE = '/api';
+
+        async function fetchReadings() {
+            try {
+                const response = await fetch(`${API_BASE}/readings?limit=10`);
+                const data = await response.json();
+                const tbody = document.querySelector('#readings-table tbody');
+                tbody.innerHTML = '';
+                data.readings.forEach(reading => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(reading.recorded_at).toLocaleString()}</td>
+                        <td>${reading.sensor_id || 'default'}</td>
+                        <td>${reading.temperature_c}</td>
+                        <td>${reading.temperature_f}</td>
+                        <td>${reading.transport_status}</td>
+                        <td>${reading.transport_error || ''}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching readings:', error);
+            }
+        }
+
+        async function fetchConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                const data = await response.json();
+                document.getElementById('protocol').value = data.transport.protocol;
+                document.getElementById('domain').value = data.transport.domain;
+                document.getElementById('region').value = data.transport.region;
+                document.getElementById('resource').value = data.transport.resource;
+                document.getElementById('device_id').value = data.transport.device_id;
+                document.getElementById('sampling_interval_sec').value = data.transport.sampling_interval_sec;
+                document.getElementById('publish_enabled').checked = data.transport.publish_enabled;
+                
+                // Populate sensors
+                const container = document.getElementById('sensors-container');
+                container.innerHTML = '';
+                data.transport.sensors.forEach((sensor, index) => {
+                    addSensorField(sensor.id, sensor.provider);
+                });
+                // Secrets are not fetched for security
+            } catch (error) {
+                console.error('Error fetching config:', error);
+            }
+        }
+
+        async function updateConfig(event) {
+            event.preventDefault();
+            const payload = {
+                transport: {
+                    protocol: document.getElementById('protocol').value,
+                    domain: document.getElementById('domain').value,
+                    region: document.getElementById('region').value,
+                    resource: document.getElementById('resource').value,
+                    device_id: document.getElementById('device_id').value,
+                    sampling_interval_sec: parseInt(document.getElementById('sampling_interval_sec').value),
+                    publish_enabled: document.getElementById('publish_enabled').checked,
+                    sensors: []
+                },
+                secrets: {}
+            };
+            // Collect sensors
+            const sensorFields = document.querySelectorAll('.sensor-field');
+            sensorFields.forEach(field => {
+                const id = field.querySelector('.sensor-id').value;
+                const provider = field.querySelector('.sensor-provider').value;
+                if (id) {
+                    payload.transport.sensors.push({ id, provider });
+                }
+            });
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const cert = document.getElementById('mqtt_client_cert').value;
+            const key = document.getElementById('mqtt_client_key').value;
+            if (username) payload.secrets.username = username;
+            if (password) payload.secrets.password = password;
+            if (cert) payload.secrets.mqtt_client_cert = cert;
+            if (key) payload.secrets.mqtt_client_key = key;
+
+            try {
+                const response = await fetch(`${API_BASE}/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    document.getElementById('config-message').innerHTML = '<div class="alert alert-success">Config updated successfully</div>';
+                    await fetchConfig(); // Refresh form
+                } else {
+                    const error = await response.text();
+                    document.getElementById('config-message').innerHTML = `<div class="alert alert-danger">Error: ${error}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('config-message').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        function addSensorField(id = '', provider = 'w1') {
+            const container = document.getElementById('sensors-container');
+            const field = document.createElement('div');
+            field.className = 'input-group mb-2 sensor-field';
+            field.innerHTML = `
+                <input type="text" class="form-control sensor-id" placeholder="Sensor ID" value="${id}">
+                <select class="form-select sensor-provider">
+                    <option value="w1" ${provider === 'w1' ? 'selected' : ''}>W1</option>
+                    <option value="mock" ${provider === 'mock' ? 'selected' : ''}>Mock</option>
+                </select>
+                <button type="button" class="btn btn-danger remove-sensor">Remove</button>
+            `;
+            container.appendChild(field);
+            field.querySelector('.remove-sensor').addEventListener('click', () => field.remove());
+        }
+
+        async function discoverAndAddSensors() {
+            try {
+                const response = await fetch(`${API_BASE}/sensors/discover`);
+                const discovered = await response.json();
+                const existingIds = Array.from(document.querySelectorAll('.sensor-id')).map(input => input.value);
+                discovered.forEach(id => {
+                    if (!existingIds.includes(id)) {
+                        addSensorField(id, 'w1');
+                    }
+                });
+            } catch (error) {
+                console.error('Error discovering sensors:', error);
+            }
+        }
+
+        async function testConnection() {
+            const protocolOverride = document.getElementById('protocol').value; // Or prompt, but using current for simplicity
+            try {
+                const response = await fetch(`${API_BASE}/test-connection`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ protocol_override: protocolOverride })
+                });
+                const data = await response.json();
+                document.getElementById('config-message').innerHTML = `<div class="alert alert-${data.status === 'ok' ? 'success' : 'danger'}">${data.message || data.status}</div>`;
+            } catch (error) {
+                document.getElementById('config-message').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchReadings();
+            fetchConfig();
+            document.getElementById('refresh-readings').addEventListener('click', fetchReadings);
+            document.getElementById('config-form').addEventListener('submit', updateConfig);
+            document.getElementById('test-connection').addEventListener('click', testConnection);
+            document.getElementById('add-sensor').addEventListener('click', () => addSensorField());
+            document.getElementById('discover-sensors').addEventListener('click', discoverAndAddSensors);
+        });
+    </script>
+</body>
 </html>

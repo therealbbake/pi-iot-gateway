@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.api.routes import router as api_router
 import backend.transports  # noqa: F401
+from backend.mqtt_subscriber import MQTTSubscriber
 from backend.scheduler import scheduler
 from backend.storage import init_db
 
@@ -29,11 +30,14 @@ app.add_middleware(
 async def startup_event() -> None:
     init_db()
     await scheduler.start()
+    subscriber = MQTTSubscriber()
+    subscriber.start()
 
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
     await scheduler.stop()
+    subscriber.stop()
 
 
 app.include_router(api_router)
