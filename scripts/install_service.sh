@@ -10,15 +10,22 @@ VENV_DIR="$APP_ROOT/.venv"
 
 echo "[pi-iot-gateway] Installing to $APP_ROOT"
 
-sudo mkdir -p "$APP_ROOT"
-sudo rsync -a --delete --exclude ".venv" --exclude "__pycache__" "$REPO_ROOT/" "$APP_ROOT/"
+if [ -d "$APP_ROOT" ]; then
+  echo "[pi-iot-gateway] Existing installation detected at $APP_ROOT. Updating files..."
+  sudo rsync -a --exclude ".venv" --exclude "__pycache__" --exclude "config/secrets.json" "$REPO_ROOT/" "$APP_ROOT/"
+else
+  sudo mkdir -p "$APP_ROOT"
+  sudo rsync -a --exclude ".venv" --exclude "__pycache__" "$REPO_ROOT/" "$APP_ROOT/"
+fi
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   echo "Python binary $PYTHON_BIN not found" >&2
   exit 1
 fi
 
-sudo "$PYTHON_BIN" -m venv "$VENV_DIR"
+if [ ! -d "$VENV_DIR" ]; then
+  sudo "$PYTHON_BIN" -m venv "$VENV_DIR"
+fi
 sudo "$VENV_DIR/bin/pip" install --upgrade pip wheel
 sudo "$VENV_DIR/bin/pip" install -r "$APP_ROOT/requirements.txt"
 
@@ -31,8 +38,12 @@ if ! command -v docker >/dev/null 2>&1; then
   sudo usermod -aG docker $SERVICE_USER
 fi
 
-echo "[pi-iot-gateway] Starting EMQX MQTT broker via Docker"
-sudo docker run -d --name emqx -p 1883:1883 -p 8083:8083 -p 8084:8084 -p 18083:18083 emqx/emqx
+echo "[pi-iot-gateway] Ensuring EMQX MQTT broker is running via Docker"
+if sudo docker ps -a | grep -q emqx; then
+  sudo docker start emqx || true
+else
+  sudo docker run -d --name emqx -p 1883:1883 -p 8083:8083 -p 8084:8084 -p 18083:18083 emqx/emqx
+fi
 
 sudo mkdir -p "$(dirname "$FERNET_KEY_FILE")"
 if [ ! -f "$FERNET_KEY_FILE" ]; then
@@ -43,7 +54,10 @@ sudo chown "$SERVICE_USER":"$SERVICE_USER" "$FERNET_KEY_FILE"
 
 sudo chown -R "$SERVICE_USER":"$SERVICE_USER" "$APP_ROOT"
 
-sudo install -m 644 "$APP_ROOT/systemd/pi-iot-gateway.service" /etc/systemd/system/pi-iot-gateway.service
+# Dynamically replace User in the service file with SERVICE_USER
+sudo cp "$APP_ROOT/systemd/pi-iot-gateway.service" /etc/systemd/system/pi-iot-gateway.service
+sudo sed -i "s/User=pi/User=$SERVICE_USER/g" /etc/systemd/system/pi-iot-gateway.service
+sudo chmod 644 /etc/systemd/system/pi-iot-gateway.service
 sudo systemctl daemon-reload
 sudo systemctl enable pi-iot-gateway.service
 echo "Installation complete. Start the service with: sudo systemctl start pi-iot-gateway.service"

@@ -65,7 +65,7 @@ PYTHONPATH=. pytest
 
 - The installation script now sets up EMQX as a local MQTT broker using Docker.
 - To use the local broker, set `protocol: mqtt` in `config/config.yaml` with `mqtt_use_tls: false`.
-- EMQX dashboard is available at `http://localhost:18083` (default username: admin, password: public).
+- EMQX dashboard is available at `http://localhost:git chegit chec` (default username: admin, password: public).
 - The gateway publishes to topic `iot/<device_id>/<resource>` on localhost:1883.
 
 ## Light Control Actions
@@ -77,7 +77,7 @@ PYTHONPATH=. pytest
 
 ## Deployment on Raspberry Pi
 
-1. Ensure the repo is copied to the device and run the installer as `pi` or another sudo-capable user:
+1. Ensure the repo is copied to the device and run the installer as `pi` or another sudo-capable user. If the service should run as a different user, set the SERVICE_USER environment variable before running the script (e.g., `export SERVICE_USER=youruser; ./scripts/install_service.sh`). The script is idempotent and can be re-run to update an existing installation.
    ```bash
    chmod +x scripts/install_service.sh
    ./scripts/install_service.sh

@@ -11,10 +11,11 @@ from backend.config import config_repository
 logger = logging.getLogger(__name__)
 
 class LightActuator:
-    def __init__(self):
-        self.pin = config_repository.settings.transport.light_gpio_pin  # Configured in settings
-        if not MOCK:
+    def __init__(self, pin: int = 17):
+        self.pin = pin
+        if is_raspberry_pi():
             GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
             GPIO.setup(self.pin, GPIO.OUT)
             GPIO.output(self.pin, GPIO.LOW)  # Assume LOW is off
 

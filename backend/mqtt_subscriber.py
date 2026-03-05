@@ -49,12 +49,15 @@ class MQTTSubscriber:
             except Exception as e:
                 logger.error(f"Error handling message on {topic}: {e}")
 
-    def start(self):
-        if config_repository.settings.transport.protocol == "mqtt":
+def start(self):
+    if config_repository.settings.transport.protocol == "mqtt":
+        try:
             self.client.connect(self.host, self.port, 60)
             threading.Thread(target=self.client.loop_forever, daemon=True).start()
-        else:
-            logger.info("MQTT subscriber not started: protocol not set to 'mqtt'")
+        except Exception as e:
+            logger.error(f"Failed to connect to MQTT broker: {e}")
+    else:
+        logger.info("MQTT subscriber not started: protocol not set to 'mqtt'")
 
     def stop(self):
         self.client.disconnect()
