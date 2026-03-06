@@ -6,7 +6,7 @@ transport:
   mqtt_port: 1883
   mqtt_use_tls: true
   protocol: mqtt
-  publish_enabled: true
+  publish_enabled: false
   region: us-ashburn-1
   resource: sampletopic
   sampling_interval_sec: 30

@@ -47,8 +47,6 @@ TransportSettings.model_rebuild()
 class SecretSettings(BaseModel):
     external_key: str = "iot_client"
     secret: str = "changeme"
-    mqtt_client_cert: Optional[str] = None
-    mqtt_client_key: Optional[str] = None
 
 
 class AppSettings(BaseModel):

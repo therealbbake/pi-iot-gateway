@@ -44,8 +44,6 @@ class ConfigResponse(BaseModel):
 class SecretUpdateRequest(BaseModel):
     external_key: Optional[str]
     secret: Optional[str]
-    mqtt_client_cert: Optional[str]
-    mqtt_client_key: Optional[str]
 
 
 class ConfigUpdatePayload(BaseModel):

@@ -9,6 +9,7 @@
         body { padding: 20px; }
         .section { margin-bottom: 40px; }
         .sensor-card { margin-bottom: 20px; }
+        #sensorEditModal { z-index: 1060 !important; }
     </style>
 </head>
 <body>
@@ -329,6 +330,7 @@
                 document.getElementById('mqtt_port').value = data.transport.mqtt_port;
                 document.getElementById('mqtt_use_tls').checked = data.transport.mqtt_use_tls;
                 toggleMqttSubsection(data.transport.protocol === 'mqtt');
+                toggleMqttFields(data.transport.mqtt_use_tls);
                 
                 app.sensors = data.transport.sensors || [];
                 app.mainSensors = [...app.sensors]; // Copy for main page management
@@ -554,6 +556,20 @@
             // Handle protocol change for MQTT subsection
             document.getElementById('protocol').addEventListener('change', (e) => {
                 toggleMqttSubsection(e.target.value === 'mqtt');
+            });
+
+            // Handle Use TLS checkbox to disable host and port
+            const useTlsCheckbox = document.getElementById('mqtt_use_tls');
+            const mqttHostInput = document.getElementById('mqtt_host');
+            const mqttPortInput = document.getElementById('mqtt_port');
+
+            function toggleMqttFields(disabled) {
+                mqttHostInput.disabled = disabled;
+                mqttPortInput.disabled = disabled;
+            }
+
+            useTlsCheckbox.addEventListener('change', (e) => {
+                toggleMqttFields(e.target.checked);
             });
             document.getElementById('reboot-pi').addEventListener('click', async () => {
                 if (confirm('Are you sure you want to reboot the Pi?')) {
