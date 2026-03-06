@@ -76,7 +76,7 @@ class SensorScheduler:
                     "sensor": sensor_id,
                     "temperatureC": temp_c,
                     "temperatureF": temp_f,
-                    "timestamp": recorded_at.isoformat(),
+                    "time": recorded_at.isoformat(),
                 }
                 transport_status = "disabled"
                 transport_error: Optional[str] = None

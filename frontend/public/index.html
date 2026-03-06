@@ -44,63 +44,108 @@
                 </div>
                 <div class="modal-body">
                     <form id="config-form">
-                        <div class="mb-3">
-                            <label for="protocol" class="form-label">Protocol</label>
-                            <select class="form-select" id="protocol">
-                                <option value="http">HTTP</option>
-                                <option value="mqtt">MQTT</option>
-                            </select>
+                        <div class="accordion" id="configAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingDevices">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDevices" aria-expanded="true" aria-controls="collapseDevices">
+                                        Connected Devices
+                                    </button>
+                                </h2>
+                                <div id="collapseDevices" class="accordion-collapse collapse show" aria-labelledby="headingDevices">
+                                    <div class="accordion-body">
+                                        <div class="mb-3">
+                                            <label for="sampling_interval_sec" class="form-label">Sampling Interval (sec)</label>
+                                            <input type="number" class="form-control" id="sampling_interval_sec" min="5" max="3600">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Sensors</label>
+                                            <ul id="sensors-list" class="list-group mb-2"></ul>
+                                            <button type="button" class="btn btn-secondary" id="add-sensor">Add Sensor</button>
+                                            <button type="button" class="btn btn-secondary ms-2" id="discover-sensors">Discover Sensors</button>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="light_gpio_pin" class="form-label">Light GPIO Pin</label>
+                                            <input type="number" class="form-control" id="light_gpio_pin" min="1" max="40">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingDomain">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDomain" aria-expanded="false" aria-controls="collapseDomain">
+                                        IoT Domain
+                                    </button>
+                                </h2>
+                                <div id="collapseDomain" class="accordion-collapse collapse" aria-labelledby="headingDomain">
+                                    <div class="accordion-body">
+                                        <div class="mb-3">
+                                            <label for="domain" class="form-label">Domain</label>
+                                            <input type="text" class="form-control" id="domain">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="region" class="form-label">Region</label>
+                                            <input type="text" class="form-control" id="region">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="resource" class="form-label">Resource</label>
+                                            <input type="text" class="form-control" id="resource">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingProtocol">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProtocol" aria-expanded="false" aria-controls="collapseProtocol">
+                                        Protocol
+                                    </button>
+                                </h2>
+                                <div id="collapseProtocol" class="accordion-collapse collapse" aria-labelledby="headingProtocol">
+                                    <div class="accordion-body">
+                                        <div class="mb-3">
+                                            <label for="protocol" class="form-label">Protocol</label>
+                                            <select class="form-select" id="protocol">
+                                                <option value="http">HTTP</option>
+                                                <option value="mqtt">MQTT</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="device_id" class="form-label">Device ID</label>
+                                            <input type="text" class="form-control" id="device_id">
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="publish_enabled">
+                                            <label class="form-check-label" for="publish_enabled">Enable Publishing</label>
+                                        </div>
+                                        <h4>Authentication</h4>
+                                        <div class="mb-3">
+                                            <label for="external_key" class="form-label">External Key</label>
+                                            <input type="text" class="form-control" id="external_key">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="secret" class="form-label">Secret</label>
+                                            <input type="password" class="form-control" id="secret">
+                                        </div>
+                                        <div id="mqtt-subsection" style="display: none;">
+                                            <h4>MQTT Settings</h4>
+                                            <div class="mb-3">
+                                                <label for="mqtt_host" class="form-label">MQTT Host</label>
+                                                <input type="text" class="form-control" id="mqtt_host">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="mqtt_port" class="form-label">MQTT Port</label>
+                                                <input type="number" class="form-control" id="mqtt_port" min="1" max="65535">
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="mqtt_use_tls">
+                                                <label class="form-check-label" for="mqtt_use_tls">Use TLS</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="domain" class="form-label">Domain</label>
-                            <input type="text" class="form-control" id="domain">
-                        </div>
-                        <div class="mb-3">
-                            <label for="region" class="form-label">Region</label>
-                            <input type="text" class="form-control" id="region">
-                        </div>
-                        <div class="mb-3">
-                            <label for="resource" class="form-label">Resource</label>
-                            <input type="text" class="form-control" id="resource">
-                        </div>
-                        <div class="mb-3">
-                            <label for="device_id" class="form-label">Device ID</label>
-                            <input type="text" class="form-control" id="device_id">
-                        </div>
-                        <div class="mb-3">
-                            <label for="sampling_interval_sec" class="form-label">Sampling Interval (sec)</label>
-                            <input type="number" class="form-control" id="sampling_interval_sec" min="5" max="3600">
-                        </div>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="publish_enabled">
-                            <label class="form-check-label" for="publish_enabled">Enable Publishing</label>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Sensors</label>
-                            <div id="config-sensors-container" class="mb-2"></div>
-                            <button type="button" class="btn btn-secondary" id="add-sensor">Add Sensor</button>
-                            <button type="button" class="btn btn-secondary ms-2" id="discover-sensors">Discover Sensors</button>
-                        </div>
-                        <!-- Secrets -->
-                        <h3>Secrets (Optional)</h3>
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username">
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password">
-                        </div>
-                        <div class="mb-3">
-                            <label for="mqtt_client_cert" class="form-label">MQTT Client Cert</label>
-                            <textarea class="form-control" id="mqtt_client_cert"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="mqtt_client_key" class="form-label">MQTT Client Key</label>
-                            <textarea class="form-control" id="mqtt_client_key"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-success">Update Config</button>
-                        <button type="button" id="test-connection" class="btn btn-info ms-2">Test Connection</button>
+                        <button type="submit" class="btn btn-success mt-3">Update Config</button>
+                        <button type="button" id="test-connection" class="btn btn-info ms-2 mt-3">Test Connection</button>
                     </form>
                     <div id="config-message" class="mt-3"></div>
                 </div>
@@ -116,7 +161,7 @@
                     <h5 class="modal-title" id="sensorDetailsModalLabel">Sensor Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
                     <table class="table table-striped" id="sensor-details-table">
                         <thead>
                             <tr>
@@ -129,6 +174,37 @@
                         </thead>
                         <tbody></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensor Edit Modal -->
+    <div class="modal fade" id="sensorEditModal" tabindex="-1" aria-labelledby="sensorEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sensorEditModalLabel">Edit Sensor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="sensor-form">
+                        <div class="mb-3">
+                            <label for="sensor-id" class="form-label">Sensor ID</label>
+                            <input type="text" class="form-control" id="sensor-id">
+                        </div>
+                        <div class="mb-3">
+                            <label for="sensor-provider" class="form-label">Provider</label>
+                            <select class="form-select" id="sensor-provider">
+                                <option value="w1">W1</option>
+                                <option value="mock">Mock</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-sensor">Save</button>
                 </div>
             </div>
         </div>
@@ -227,13 +303,14 @@
                 document.getElementById('device_id').value = data.transport.device_id;
                 document.getElementById('sampling_interval_sec').value = data.transport.sampling_interval_sec;
                 document.getElementById('publish_enabled').checked = data.transport.publish_enabled;
+                document.getElementById('light_gpio_pin').value = data.transport.light_gpio_pin;
+                document.getElementById('mqtt_host').value = data.transport.mqtt_host || '';
+                document.getElementById('mqtt_port').value = data.transport.mqtt_port;
+                document.getElementById('mqtt_use_tls').checked = data.transport.mqtt_use_tls;
+                toggleMqttSubsection(data.transport.protocol === 'mqtt');
                 
-                // Populate sensors
-                const container = document.getElementById('config-sensors-container');
-                container.innerHTML = '';
-                data.transport.sensors.forEach((sensor, index) => {
-                    addSensorField(sensor.id, sensor.provider);
-                });
+                app.sensors = data.transport.sensors || [];
+                renderSensorsList();
                 // Secrets are not fetched for security
             } catch (error) {
                 console.error('Error fetching config:', error);
@@ -251,28 +328,19 @@
                     device_id: document.getElementById('device_id').value,
                     sampling_interval_sec: parseInt(document.getElementById('sampling_interval_sec').value),
                     publish_enabled: document.getElementById('publish_enabled').checked,
-                    sensors: []
+                    light_gpio_pin: parseInt(document.getElementById('light_gpio_pin').value),
+                    mqtt_host: document.getElementById('mqtt_host').value || null,
+                    mqtt_port: parseInt(document.getElementById('mqtt_port').value),
+                    mqtt_use_tls: document.getElementById('mqtt_use_tls').checked,
+                    sensors: app.sensors
                 },
                 secrets: {}
             };
-            // Collect sensors
-            const sensorFields = document.querySelectorAll('.sensor-field');
-            sensorFields.forEach(field => {
-                const id = field.querySelector('.sensor-id').value;
-                const provider = field.querySelector('.sensor-provider').value;
-                if (id) {
-                    payload.transport.sensors.push({ id, provider });
-                }
-            });
 
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const cert = document.getElementById('mqtt_client_cert').value;
-            const key = document.getElementById('mqtt_client_key').value;
-            if (username) payload.secrets.username = username;
-            if (password) payload.secrets.password = password;
-            if (cert) payload.secrets.mqtt_client_cert = cert;
-            if (key) payload.secrets.mqtt_client_key = key;
+            const external_key = document.getElementById('external_key').value;
+            const secret = document.getElementById('secret').value;
+            if (external_key) payload.secrets.external_key = external_key;
+            if (secret) payload.secrets.secret = secret;
 
             try {
                 const response = await fetch(`${API_BASE}/config`, {
@@ -292,32 +360,68 @@
             }
         }
 
-        function addSensorField(id = '', provider = 'w1') {
-            const container = document.getElementById('config-sensors-container');
-            const field = document.createElement('div');
-            field.className = 'input-group mb-2 sensor-field';
-            field.innerHTML = `
-                <input type="text" class="form-control sensor-id" placeholder="Sensor ID" value="${id}">
-                <select class="form-select sensor-provider">
-                    <option value="w1" ${provider === 'w1' ? 'selected' : ''}>W1</option>
-                    <option value="mock" ${provider === 'mock' ? 'selected' : ''}>Mock</option>
-                </select>
-                <button type="button" class="btn btn-danger remove-sensor">Remove</button>
-            `;
-            container.appendChild(field);
-            field.querySelector('.remove-sensor').addEventListener('click', () => field.remove());
+        let app = { sensors: [], currentEditIndex: -1 };
+
+        function renderSensorsList() {
+            const list = document.getElementById('sensors-list');
+            list.innerHTML = '';
+            app.sensors.forEach((sensor, index) => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    <span>${sensor.id} (${sensor.provider})</span>
+                    <div>
+                        <button class="btn btn-sm btn-primary edit-sensor me-1" data-index="${index}">Edit</button>
+                        <button class="btn btn-sm btn-danger remove-sensor" data-index="${index}">Remove</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function openSensorModal(index) {
+            const modal = new bootstrap.Modal(document.getElementById('sensorEditModal'));
+            const title = document.getElementById('sensorEditModalLabel');
+            const idInput = document.getElementById('sensor-id');
+            const providerSelect = document.getElementById('sensor-provider');
+            app.currentEditIndex = index;
+            if (index >= 0) {
+                const sensor = app.sensors[index];
+                title.textContent = 'Edit Sensor';
+                idInput.value = sensor.id;
+                providerSelect.value = sensor.provider;
+            } else {
+                title.textContent = 'Add Sensor';
+                idInput.value = '';
+                providerSelect.value = 'w1';
+            }
+            modal.show();
+        }
+
+        function saveSensor() {
+            const id = document.getElementById('sensor-id').value;
+            const provider = document.getElementById('sensor-provider').value;
+            if (!id) return; // Validation
+            if (app.currentEditIndex >= 0) {
+                app.sensors[app.currentEditIndex] = { id, provider };
+            } else {
+                app.sensors.push({ id, provider });
+            }
+            renderSensorsList();
+            bootstrap.Modal.getInstance(document.getElementById('sensorEditModal')).hide();
         }
 
         async function discoverAndAddSensors() {
             try {
                 const response = await fetch(`${API_BASE}/sensors/discover`);
                 const discovered = await response.json();
-                const existingIds = Array.from(document.querySelectorAll('.sensor-id')).map(input => input.value);
+                const existingIds = app.sensors.map(s => s.id);
                 discovered.forEach(id => {
                     if (!existingIds.includes(id)) {
-                        addSensorField(id, 'w1');
+                        app.sensors.push({ id, provider: 'w1' });
                     }
                 });
+                renderSensorsList();
             } catch (error) {
                 console.error('Error discovering sensors:', error);
             }
@@ -361,11 +465,31 @@
             document.getElementById('refresh-readings').addEventListener('click', fetchReadings);
             document.getElementById('config-form').addEventListener('submit', updateConfig);
             document.getElementById('test-connection').addEventListener('click', testConnection);
-            document.getElementById('add-sensor').addEventListener('click', () => addSensorField());
+            document.getElementById('add-sensor').addEventListener('click', () => openSensorModal(-1));
             document.getElementById('discover-sensors').addEventListener('click', discoverAndAddSensors);
             document.getElementById('light-on').addEventListener('click', () => toggleLight('on'));
             document.getElementById('light-off').addEventListener('click', () => toggleLight('off'));
+            document.getElementById('save-sensor').addEventListener('click', saveSensor);
+            document.getElementById('sensors-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('edit-sensor')) {
+                    const index = parseInt(e.target.dataset.index);
+                    openSensorModal(index);
+                } else if (e.target.classList.contains('remove-sensor')) {
+                    const index = parseInt(e.target.dataset.index);
+                    app.sensors.splice(index, 1);
+                    renderSensorsList();
+                }
+            });
+
+            // Handle protocol change for MQTT subsection
+            document.getElementById('protocol').addEventListener('change', (e) => {
+                toggleMqttSubsection(e.target.value === 'mqtt');
+            });
         });
+
+        function toggleMqttSubsection(show) {
+            document.getElementById('mqtt-subsection').style.display = show ? 'block' : 'none';
+        }
     </script>
 </body>
 </html>

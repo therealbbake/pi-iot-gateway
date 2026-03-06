@@ -1,5 +1,6 @@
 import logging
 import threading
+import ssl
 from paho.mqtt import client as mqtt_client
 
 from backend.config import config_repository
@@ -15,28 +16,23 @@ class MQTTSubscriber:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.light = LightActuator()
-        self.host = self.settings.mqtt_host or "localhost" if not self.settings.mqtt_use_tls else f"{self.settings.domain}.device.iot.{self.settings.region}.oci.oraclecloud.com"
+        self.host = self.settings.mqtt_host if not self.settings.mqtt_use_tls else f"{self.settings.domain}.device.iot.{self.settings.region}.oci.oraclecloud.com"
         self.port = self.settings.mqtt_port if not self.settings.mqtt_use_tls else 8883
         self.topics = {
-            "powerOnLight": self.light.turn_on,
-            "powerOffLight": self.light.turn_off
+            "/light/on": self.light.turn_on,
+            "/light/off": self.light.turn_off
         }
         self.connected = False
         self.status = "disabled"
         if self.settings.mqtt_use_tls:
-            self.client.username_pw_set(self.secrets.username, self.secrets.password)
+            self.client.username_pw_set(self.secrets.external_key, self.secrets.secret)
             context = ssl.create_default_context()
-            if self.secrets.mqtt_client_cert and self.secrets.mqtt_client_key:
-                context.load_cert_chain(
-                    certfile=self.secrets.mqtt_client_cert,
-                    keyfile=self.secrets.mqtt_client_key,
-                )
             self.client.tls_set_context(context)
             self.client.tls_insecure_set(False)
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            logger.info("Connected to local MQTT broker")
+            logger.info("Connected to MQTT broker")
             self.connected = True
             self.status = "connected"
             for topic in self.topics.keys():
@@ -52,8 +48,11 @@ class MQTTSubscriber:
         if topic in self.topics:
             try:
                 self.topics[topic]()
+                status = "on" if topic == "/light/on" else "off"
+                client.publish("/light/status", f'{{"light": "{status}"}}', qos=1)
             except Exception as e:
                 logger.error(f"Error handling message on {topic}: {e}")
+                client.publish("/light/status", f'{{"error": "{str(e)}"}}', qos=1)
 
     def start(self):
         if config_repository.settings.transport.protocol == "mqtt":

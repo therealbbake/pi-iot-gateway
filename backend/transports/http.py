@@ -33,7 +33,7 @@ class HttpTransport(BaseTransport):
                     "Content-Type": "application/json",
                     "Accept": "application/json",
                 },
-                auth=(self.secrets.username, self.secrets.password),
+                auth=(self.secrets.external_key, self.secrets.secret),
             )
             response.raise_for_status()
         except HTTPError as exc:

@@ -18,7 +18,7 @@ class MqttTransport(BaseTransport):
     def host(self) -> str:
         if self.settings.mqtt_use_tls:
             return f"{self.settings.domain}.device.iot.{self.settings.region}.oci.oraclecloud.com"
-        return self.settings.mqtt_host or "localhost"
+        return self.settings.mqtt_host
 
     @property
     def port(self) -> int:
@@ -29,19 +29,14 @@ class MqttTransport(BaseTransport):
     @property
     def topic(self) -> str:
         if self.settings.mqtt_use_tls:
-            return f"iot/{self.settings.domain}/{self.settings.device_id}/{self.settings.resource}"
+            return "/data"
         return f"iot/{self.settings.device_id}/{self.settings.resource}"
 
     def _build_client(self) -> mqtt_client.Client:
         client = mqtt_client.Client(client_id=self.settings.device_id)
         if self.settings.mqtt_use_tls:
-            client.username_pw_set(self.secrets.username, self.secrets.password)
+            client.username_pw_set(self.secrets.external_key, self.secrets.secret)
             context = ssl.create_default_context()
-            if self.secrets.mqtt_client_cert and self.secrets.mqtt_client_key:
-                context.load_cert_chain(
-                    certfile=self.secrets.mqtt_client_cert,
-                    keyfile=self.secrets.mqtt_client_key,
-                )
             client.tls_set_context(context)
             client.tls_insecure_set(False)
         return client

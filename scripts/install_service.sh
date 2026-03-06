@@ -29,15 +29,6 @@ fi
 sudo "$VENV_DIR/bin/pip" install --upgrade pip wheel
 sudo "$VENV_DIR/bin/pip" install -r "$APP_ROOT/requirements.txt"
 
-echo "[pi-iot-gateway] Installing EMQX as a native service if not present"
-if ! dpkg -l | grep -q emqx; then
-  sudo apt update
-  curl -s https://assets.emqx.com/scripts/install-emqx-deb.sh | sudo bash
-  sudo apt-get install -y emqx
-fi
-sudo systemctl enable emqx
-sudo systemctl start emqx || true
-
 sudo mkdir -p "$(dirname "$FERNET_KEY_FILE")"
 if [ ! -f "$FERNET_KEY_FILE" ]; then
   sudo "$VENV_DIR/bin/python" -c "from cryptography.fernet import Fernet; import pathlib; pathlib.Path('$FERNET_KEY_FILE').write_bytes(Fernet.generate_key())"
