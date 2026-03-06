@@ -23,6 +23,7 @@
         <div class="section">
             <h2>Current Readings</h2>
             <button id="refresh-readings" class="btn btn-primary mb-3">Refresh</button>
+            <button id="manage-sensors" class="btn btn-secondary mb-3 ms-2" data-bs-toggle="modal" data-bs-target="#sensorsModal">Manage Sensors</button>
             <div id="sensors-container" class="row"></div>
         </div>
 
@@ -212,6 +213,26 @@
         </div>
     </div>
 
+    <!-- Sensors Management Modal -->
+    <div class="modal fade" id="sensorsModal" tabindex="-1" aria-labelledby="sensorsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sensorsModalLabel">Manage Sensors</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="main-sensors-list" class="list-group mb-2"></ul>
+                    <button type="button" class="btn btn-secondary" id="main-add-sensor">Add Sensor</button>
+                    <button type="button" class="btn btn-secondary ms-2" id="main-discover-sensors">Discover Sensors</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="save-sensors">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <script>
@@ -312,7 +333,9 @@
                 toggleMqttSubsection(data.transport.protocol === 'mqtt');
                 
                 app.sensors = data.transport.sensors || [];
+                app.mainSensors = [...app.sensors]; // Copy for main page management
                 renderSensorsList();
+                renderMainSensorsList();
                 // Secrets are not fetched for security
             } catch (error) {
                 console.error('Error fetching config:', error);
@@ -362,7 +385,7 @@
             }
         }
 
-        let app = { sensors: [], currentEditIndex: -1 };
+        let app = { sensors: [], mainSensors: [], currentEditIndex: -1, currentModal: 'config' };
 
         function renderSensorsList() {
             const list = document.getElementById('sensors-list');
@@ -381,14 +404,33 @@
             });
         }
 
-        function openSensorModal(index) {
+        function renderMainSensorsList() {
+            const list = document.getElementById('main-sensors-list');
+            list.innerHTML = '';
+            app.mainSensors.forEach((sensor, index) => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    <span>${sensor.id} (${sensor.provider})</span>
+                    <div>
+                        <button class="btn btn-sm btn-primary main-edit-sensor me-1" data-index="${index}">Edit</button>
+                        <button class="btn btn-sm btn-danger main-remove-sensor" data-index="${index}">Remove</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function openSensorModal(index, modalType = 'config') {
+            app.currentModal = modalType;
+            const sensorsArray = modalType === 'config' ? app.sensors : app.mainSensors;
             const modal = new bootstrap.Modal(document.getElementById('sensorEditModal'));
             const title = document.getElementById('sensorEditModalLabel');
             const idInput = document.getElementById('sensor-id');
             const providerSelect = document.getElementById('sensor-provider');
             app.currentEditIndex = index;
             if (index >= 0) {
-                const sensor = app.sensors[index];
+                const sensor = sensorsArray[index];
                 title.textContent = 'Edit Sensor';
                 idInput.value = sensor.id;
                 providerSelect.value = sensor.provider;
@@ -404,28 +446,60 @@
             const id = document.getElementById('sensor-id').value;
             const provider = document.getElementById('sensor-provider').value;
             if (!id) return; // Validation
+            const sensorsArray = app.currentModal === 'config' ? app.sensors : app.mainSensors;
             if (app.currentEditIndex >= 0) {
-                app.sensors[app.currentEditIndex] = { id, provider };
+                sensorsArray[app.currentEditIndex] = { id, provider };
             } else {
-                app.sensors.push({ id, provider });
+                sensorsArray.push({ id, provider });
             }
-            renderSensorsList();
+            if (app.currentModal === 'config') {
+                renderSensorsList();
+            } else {
+                renderMainSensorsList();
+            }
             bootstrap.Modal.getInstance(document.getElementById('sensorEditModal')).hide();
         }
 
-        async function discoverAndAddSensors() {
+        async function discoverAndAddSensors(modalType = 'config') {
             try {
                 const response = await fetch(`${API_BASE}/sensors/discover`);
                 const discovered = await response.json();
-                const existingIds = app.sensors.map(s => s.id);
+                const sensorsArray = modalType === 'config' ? app.sensors : app.mainSensors;
+                const existingIds = sensorsArray.map(s => s.id);
                 discovered.forEach(id => {
                     if (!existingIds.includes(id)) {
-                        app.sensors.push({ id, provider: 'w1' });
+                        sensorsArray.push({ id, provider: 'w1' });
                     }
                 });
-                renderSensorsList();
+                if (modalType === 'config') {
+                    renderSensorsList();
+                } else {
+                    renderMainSensorsList();
+                }
             } catch (error) {
                 console.error('Error discovering sensors:', error);
+            }
+        }
+
+        async function saveMainSensors() {
+            const payload = {
+                transport: { sensors: app.mainSensors }
+            };
+            try {
+                const response = await fetch(`${API_BASE}/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    await fetchConfig();
+                    alert('Sensors updated successfully');
+                    bootstrap.Modal.getInstance(document.getElementById('sensorsModal')).hide();
+                } else {
+                    alert('Error updating sensors');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
             }
         }
 
@@ -475,13 +549,26 @@
             document.getElementById('sensors-list').addEventListener('click', (e) => {
                 if (e.target.classList.contains('edit-sensor')) {
                     const index = parseInt(e.target.dataset.index);
-                    openSensorModal(index);
+                    openSensorModal(index, 'config');
                 } else if (e.target.classList.contains('remove-sensor')) {
                     const index = parseInt(e.target.dataset.index);
                     app.sensors.splice(index, 1);
                     renderSensorsList();
                 }
             });
+            document.getElementById('main-sensors-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('main-edit-sensor')) {
+                    const index = parseInt(e.target.dataset.index);
+                    openSensorModal(index, 'main');
+                } else if (e.target.classList.contains('main-remove-sensor')) {
+                    const index = parseInt(e.target.dataset.index);
+                    app.mainSensors.splice(index, 1);
+                    renderMainSensorsList();
+                }
+            });
+            document.getElementById('main-add-sensor').addEventListener('click', () => openSensorModal(-1, 'main'));
+            document.getElementById('main-discover-sensors').addEventListener('click', () => discoverAndAddSensors('main'));
+            document.getElementById('save-sensors').addEventListener('click', saveMainSensors);
 
             // Handle protocol change for MQTT subsection
             document.getElementById('protocol').addEventListener('change', (e) => {
