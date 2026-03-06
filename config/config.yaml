@@ -1,10 +1,13 @@
 transport:
-  protocol: mqtt
+  device_id: pi-gateway-01
   domain: example
+  light_gpio_pin: 17
+  mqtt_host: null
+  mqtt_port: 1883
+  mqtt_use_tls: true
+  protocol: mqtt
+  publish_enabled: true
   region: us-ashburn-1
   resource: sampletopic
-  device_id: pi-gateway-01
   sampling_interval_sec: 30
-  publish_enabled: true
-  sensor_provider: mock
-  mqtt_use_tls: true
+  sensors: []

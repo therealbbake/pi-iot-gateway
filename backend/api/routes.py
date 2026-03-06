@@ -7,6 +7,7 @@ from backend.models import (
     ReadingsResponse,
     TestConnectionRequest,
     TestConnectionResponse,
+    SensorsUpdatePayload,
 )
 from typing import List
 from backend.sensor.base import discover_w1_sensors
@@ -52,6 +53,17 @@ async def update_config(payload: ConfigUpdatePayload) -> ConfigResponse:
         secrets = payload.secrets.dict(exclude_unset=True, exclude_none=True)
     try:
         config_repository.update(updates, secret_updates=secrets)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await sensor_scheduler.start()
+    return await get_config()
+
+
+@router.put("/config/sensors", response_model=ConfigResponse)
+async def update_sensors(payload: SensorsUpdatePayload) -> ConfigResponse:
+    updates = {"transport": {"sensors": [sensor.dict() for sensor in payload.sensors]}}
+    try:
+        config_repository.update(updates)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     await sensor_scheduler.start()

@@ -61,8 +61,6 @@
                                         <div class="mb-3">
                                             <label class="form-label">Sensors</label>
                                             <ul id="sensors-list" class="list-group mb-2"></ul>
-                                            <button type="button" class="btn btn-secondary" id="add-sensor">Add Sensor</button>
-                                            <button type="button" class="btn btn-secondary ms-2" id="discover-sensors">Discover Sensors</button>
                                         </div>
                                         <div class="mb-3">
                                             <label for="light_gpio_pin" class="form-label">Light GPIO Pin</label>
@@ -356,8 +354,7 @@
                     light_gpio_pin: parseInt(document.getElementById('light_gpio_pin').value),
                     mqtt_host: document.getElementById('mqtt_host').value || null,
                     mqtt_port: parseInt(document.getElementById('mqtt_port').value),
-                    mqtt_use_tls: document.getElementById('mqtt_use_tls').checked,
-                    sensors: app.sensors
+                    mqtt_use_tls: document.getElementById('mqtt_use_tls').checked
                 },
                 secrets: {}
             };
@@ -395,10 +392,6 @@
                 item.className = 'list-group-item d-flex justify-content-between align-items-center';
                 item.innerHTML = `
                     <span>${sensor.id} (${sensor.provider})</span>
-                    <div>
-                        <button class="btn btn-sm btn-primary edit-sensor me-1" data-index="${index}">Edit</button>
-                        <button class="btn btn-sm btn-danger remove-sensor" data-index="${index}">Remove</button>
-                    </div>
                 `;
                 list.appendChild(item);
             });
@@ -483,10 +476,10 @@
 
         async function saveMainSensors() {
             const payload = {
-                transport: { sensors: app.mainSensors }
+                sensors: app.mainSensors
             };
             try {
-                const response = await fetch(`${API_BASE}/config`, {
+                const response = await fetch(`${API_BASE}/config/sensors`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -541,21 +534,9 @@
             document.getElementById('refresh-readings').addEventListener('click', fetchReadings);
             document.getElementById('config-form').addEventListener('submit', updateConfig);
             document.getElementById('test-connection').addEventListener('click', testConnection);
-            document.getElementById('add-sensor').addEventListener('click', () => openSensorModal(-1));
-            document.getElementById('discover-sensors').addEventListener('click', discoverAndAddSensors);
             document.getElementById('light-on').addEventListener('click', () => toggleLight('on'));
             document.getElementById('light-off').addEventListener('click', () => toggleLight('off'));
             document.getElementById('save-sensor').addEventListener('click', saveSensor);
-            document.getElementById('sensors-list').addEventListener('click', (e) => {
-                if (e.target.classList.contains('edit-sensor')) {
-                    const index = parseInt(e.target.dataset.index);
-                    openSensorModal(index, 'config');
-                } else if (e.target.classList.contains('remove-sensor')) {
-                    const index = parseInt(e.target.dataset.index);
-                    app.sensors.splice(index, 1);
-                    renderSensorsList();
-                }
-            });
             document.getElementById('main-sensors-list').addEventListener('click', (e) => {
                 if (e.target.classList.contains('main-edit-sensor')) {
                     const index = parseInt(e.target.dataset.index);

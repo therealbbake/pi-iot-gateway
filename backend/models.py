@@ -57,6 +57,9 @@ class TestConnectionRequest(BaseModel):
     protocol_override: Optional[str] = Field(None, pattern="^(http|mqtt)$")
 
 
+class SensorsUpdatePayload(BaseModel):
+    sensors: List[SensorConfigModel]
+
 class TestConnectionResponse(BaseModel):
     status: str
     message: Optional[str]
