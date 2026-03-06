@@ -1,8 +1,8 @@
 [Unit]
 Description=Pi IoT Gateway Service
-After=network-online.target emqx.service
+After=network-online.target
 Wants=network-online.target
-Requires=emqx.service
+
 
 [Service]
 Type=simple
