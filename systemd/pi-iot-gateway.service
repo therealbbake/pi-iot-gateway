@@ -1,15 +1,14 @@
 [Unit]
 Description=Pi IoT Gateway Service
-After=network-online.target docker.service
+After=network-online.target emqx.service
 Wants=network-online.target
-Requires=docker.service
+Requires=emqx.service
 
 [Service]
 Type=simple
 User=pi
 WorkingDirectory=/opt/pi-iot-gateway
 Environment=PI_IOT_FERNET_KEY_FILE=/etc/pi-iot-gateway/fernet.key
-ExecStartPre=/bin/sh -c 'if ! docker ps | grep emqx; then docker start emqx || docker run -d --name emqx -p 1883:1883 -p 8083:8083 -p 8084:8084 -p 18083:18083 emqx/emqx; fi'
 ExecStart=/opt/pi-iot-gateway/.venv/bin/python -m backend.main
 Restart=on-failure
 RestartSec=5

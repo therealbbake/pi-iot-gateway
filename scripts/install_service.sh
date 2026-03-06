@@ -29,21 +29,14 @@ fi
 sudo "$VENV_DIR/bin/pip" install --upgrade pip wheel
 sudo "$VENV_DIR/bin/pip" install -r "$APP_ROOT/requirements.txt"
 
-echo "[pi-iot-gateway] Installing Docker if not present"
-if ! command -v docker >/dev/null 2>&1; then
+echo "[pi-iot-gateway] Installing EMQX as a native service if not present"
+if ! dpkg -l | grep -q emqx; then
   sudo apt update
-  sudo apt install -y docker.io
-  sudo systemctl enable docker
-  sudo systemctl start docker
-  sudo usermod -aG docker $SERVICE_USER
+  curl -s https://assets.emqx.com/scripts/install-emqx-deb.sh | sudo bash
+  sudo apt-get install -y emqx
 fi
-
-echo "[pi-iot-gateway] Ensuring EMQX MQTT broker is running via Docker"
-if sudo docker ps -a | grep -q emqx; then
-  sudo docker start emqx || true
-else
-  sudo docker run -d --name emqx -p 1883:1883 -p 8083:8083 -p 8084:8084 -p 18083:18083 emqx/emqx
-fi
+sudo systemctl enable emqx
+sudo systemctl start emqx || true
 
 sudo mkdir -p "$(dirname "$FERNET_KEY_FILE")"
 if [ ! -f "$FERNET_KEY_FILE" ]; then
