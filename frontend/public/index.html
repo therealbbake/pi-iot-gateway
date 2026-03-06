@@ -237,6 +237,8 @@
     <script>
         const API_BASE = '/api';
 
+        let app = { sensors: [], mainSensors: [], currentEditIndex: -1, currentModal: 'config' };
+        
         async function fetchReadings() {
             try {
                 const response = await fetch(`${API_BASE}/readings?limit=100`);
@@ -332,7 +334,7 @@
                 toggleMqttSubsection(data.transport.protocol === 'mqtt');
                 toggleMqttFields(data.transport.mqtt_use_tls);
                 
-                app.sensors = data.transport.sensors || [];
+                app.sensors = data.sensors || [];
                 app.mainSensors = [...app.sensors]; // Copy for main page management
                 renderSensorsList();
                 renderMainSensorsList();
@@ -384,7 +386,6 @@
             }
         }
 
-        let app = { sensors: [], mainSensors: [], currentEditIndex: -1, currentModal: 'config' };
 
         function renderSensorsList() {
             const list = document.getElementById('sensors-list');
@@ -498,6 +499,17 @@
             }
         }
 
+        async function fetchSensors() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                const data = await response.json();
+                app.mainSensors = data.sensors || [];
+                renderMainSensorsList();
+            } catch (error) {
+                console.error('Error fetching sensors:', error);
+            }
+        }
+
         async function testConnection() {
             const protocolOverride = document.getElementById('protocol').value; // Or prompt, but using current for simplicity
             try {
@@ -532,6 +544,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchReadings();
+            fetchSensors();
             fetchConfig();
             document.getElementById('refresh-readings').addEventListener('click', fetchReadings);
             document.getElementById('config-form').addEventListener('submit', updateConfig);

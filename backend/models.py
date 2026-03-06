@@ -30,7 +30,6 @@ class TransportConfigModel(BaseModel):
     device_id: str
     sampling_interval_sec: int = Field(..., ge=5, le=3600)
     publish_enabled: bool = True
-    sensors: List[SensorConfigModel] = Field(default_factory=list)
     light_gpio_pin: int = Field(17, ge=1, le=40)
     mqtt_host: Optional[str] = None
     mqtt_port: int = Field(1883, ge=1, le=65535)
@@ -39,6 +38,7 @@ class TransportConfigModel(BaseModel):
 
 class ConfigResponse(BaseModel):
     transport: TransportConfigModel
+    sensors: List[SensorConfigModel]
 
 
 class SecretUpdateRequest(BaseModel):

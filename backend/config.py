@@ -25,7 +25,6 @@ class TransportSettings(BaseModel):
     device_id: str = "pi-gateway-01"
     sampling_interval_sec: int = Field(30, ge=5, le=3600)
     publish_enabled: bool = True
-    sensors: List[SensorConfigModel] = Field(default_factory=list)
     light_gpio_pin: int = Field(17, ge=1, le=40)  # GPIO pin for light control
     mqtt_host: Optional[str] = None
     mqtt_port: int = Field(1883, ge=1, le=65535)
@@ -147,6 +146,8 @@ class ConfigRepository:
             if updates:
                 merged = self._settings.dict()
                 merged_transport = {**merged["transport"], **updates.get("transport", updates)}
+                if "sensors" in merged_transport:
+                    del merged_transport["sensors"]
                 merged["transport"] = merged_transport
                 self._settings = AppSettings(**merged)
                 CONFIG_PATH.write_text(yaml.safe_dump(self._settings.dict()))

@@ -8,10 +8,11 @@ from backend.models import (
     TestConnectionRequest,
     TestConnectionResponse,
     SensorsUpdatePayload,
+    SensorConfigModel,
 )
 from typing import List
 from backend.sensor.base import discover_w1_sensors
-from backend.storage import list_readings
+from backend.storage import list_readings, list_sensors, update_sensors
 from backend.scheduler import scheduler as sensor_scheduler
 from backend.transports.base import get_transport
 from backend.actuators.light import LightActuator
@@ -40,7 +41,8 @@ async def readings(limit: int = 100) -> ReadingsResponse:
 @router.get("/config", response_model=ConfigResponse)
 async def get_config() -> ConfigResponse:
     settings = config_repository.settings
-    return ConfigResponse(transport=settings.transport.dict())
+    sensors = list_sensors()
+    return ConfigResponse(transport=settings.transport.dict(), sensors=[SensorConfigModel(**s) for s in sensors])
 
 
 @router.put("/config", response_model=ConfigResponse)
@@ -60,12 +62,8 @@ async def update_config(payload: ConfigUpdatePayload) -> ConfigResponse:
 
 
 @router.put("/config/sensors", response_model=ConfigResponse)
-async def update_sensors(payload: SensorsUpdatePayload) -> ConfigResponse:
-    updates = {"transport": {"sensors": [sensor.dict() for sensor in payload.sensors]}}
-    try:
-        config_repository.update(updates)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+async def update_config_sensors(payload: SensorsUpdatePayload) -> ConfigResponse:
+    update_sensors([s.dict() for s in payload.sensors])
     await sensor_scheduler.start()
     return await get_config()
 

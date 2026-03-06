@@ -10,4 +10,3 @@ transport:
   region: us-ashburn-1
   resource: sampletopic
   sampling_interval_sec: 30
-  sensors: []

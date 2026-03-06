@@ -5,7 +5,7 @@ from typing import Optional, Dict
 
 from backend.config import ConfigRepository, TransportSettings, config_repository
 from backend.sensor.base import BaseSensorProvider, get_provider
-from backend.storage import Reading, add_reading
+from backend.storage import Reading, add_reading, list_sensors
 from backend.transports.base import BaseTransport, get_transport
 
 logger = logging.getLogger("pi_iot_gateway.scheduler")
@@ -44,12 +44,14 @@ class SensorScheduler:
     async def _run(self) -> None:
         while not self._stop_event.is_set():
             settings = self._repo.settings.transport
-            # Update providers based on configured sensors
-            current_sensor_ids = set(sensor.id for sensor in settings.sensors)
+            # Update providers based on configured sensors from DB
+            sensors = list_sensors()
+            current_sensor_ids = set(s["id"] for s in sensors)
             self._providers = {sid: prov for sid, prov in self._providers.items() if sid in current_sensor_ids}
-            for sensor in settings.sensors:
-                if sensor.id not in self._providers:
-                    self._providers[sensor.id] = get_provider(sensor.provider, sensor.id)
+            for sensor in sensors:
+                sid = sensor["id"]
+                if sid not in self._providers:
+                    self._providers[sid] = get_provider(sensor["provider"], sid)
 
             if not self._transport or self._protocol != settings.protocol:
                 await self._close_transport()
