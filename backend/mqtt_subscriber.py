@@ -21,6 +21,8 @@ class MQTTSubscriber:
             "powerOnLight": self.light.turn_on,
             "powerOffLight": self.light.turn_off
         }
+        self.connected = False
+        self.status = "disabled"
         if self.settings.mqtt_use_tls:
             self.client.username_pw_set(self.secrets.username, self.secrets.password)
             context = ssl.create_default_context()
@@ -35,11 +37,15 @@ class MQTTSubscriber:
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             logger.info("Connected to local MQTT broker")
+            self.connected = True
+            self.status = "connected"
             for topic in self.topics.keys():
                 client.subscribe(topic)
                 logger.info(f"Subscribed to {topic}")
         else:
             logger.error(f"Failed to connect, return code {rc}")
+            self.connected = False
+            self.status = "failed"
 
     def on_message(self, client, userdata, msg):
         topic = msg.topic
@@ -51,13 +57,16 @@ class MQTTSubscriber:
 
 def start(self):
     if config_repository.settings.transport.protocol == "mqtt":
+        self.status = "connecting"
         try:
             self.client.connect(self.host, self.port, 60)
             threading.Thread(target=self.client.loop_forever, daemon=True).start()
         except Exception as e:
             logger.error(f"Failed to connect to MQTT broker: {e}")
+            self.status = "failed"
     else:
         logger.info("MQTT subscriber not started: protocol not set to 'mqtt'")
+        self.status = "disabled"
 
     def stop(self):
         self.client.disconnect()

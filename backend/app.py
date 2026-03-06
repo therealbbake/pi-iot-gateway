@@ -32,6 +32,7 @@ async def startup_event() -> None:
     await scheduler.start()
     subscriber = MQTTSubscriber()
     subscriber.start()
+    app.state.mqtt_subscriber = subscriber
 
 
 @app.on_event("shutdown")
@@ -53,4 +54,5 @@ if frontend_dir.exists():
 
 @app.get("/healthz")
 async def health() -> dict:
-    return {"status": "ok"}
+    mqtt_status = app.state.mqtt_subscriber.status if hasattr(app.state, 'mqtt_subscriber') else "unknown"
+    return {"status": "ok", "mqtt_status": mqtt_status}
