@@ -14,6 +14,8 @@ from backend.storage import list_readings
 from backend.scheduler import scheduler as sensor_scheduler
 from backend.transports.base import get_transport
 from backend.actuators.light import LightActuator
+import subprocess
+import os
 
 router = APIRouter(prefix="/api")
 
@@ -84,3 +86,22 @@ async def light_off():
     actuator = LightActuator()
     actuator.turn_off()
     return {"status": "ok", "message": "Light turned off"}
+
+@router.post("/reboot")
+async def reboot_pi():
+    try:
+        subprocess.run(["sudo", "reboot"], check=True)
+        return {"message": "Reboot initiated"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/update")
+async def update_service():
+    app_root = "/opt/pi-iot-gateway"
+    try:
+        subprocess.run(["git", "pull", "origin", "main"], cwd=app_root, check=True)
+        subprocess.run(["sudo", "bash", "scripts/install_service.sh"], cwd=app_root, check=True)
+        subprocess.run(["sudo", "systemctl", "restart", "pi-iot-gateway.service"], check=True)
+        return {"message": "Update and restart initiated"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
