@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class LightActuator:
     def __init__(self, pin: int = 17):
         self.pin = pin
-        if is_raspberry_pi():
+        if not MOCK:
             GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
             GPIO.setup(self.pin, GPIO.OUT)
